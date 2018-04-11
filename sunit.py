@@ -63,9 +63,9 @@ class sbase() :
     ###              ###
 
 def watch_cell(date, s,ib) :
-    return s.csell(ib)
+    return s.csell(s,ib)
 def watch_buy(date, s,ib) :
-    return s.cbuy(ib)
+    return s.cbuy(s,ib)
 
 class ibase() :
     nM = None
@@ -77,10 +77,8 @@ class ibase() :
     name = None
 
     def __init__(self, csv, strg , initp,name='stock'):
-        self.value = np.array(csv['기준가'])
+        self.value = np.array(csv)
         self.value.reshape([-1])
-        self.comyest = csv['전일대비']
-        self.net = np.array(csv['등락율'])
         self.name = name
 
         self.N = get_N(self.value)
@@ -103,6 +101,7 @@ class sunit() :
     def __init__(self, csv , initp, strat,name='stock', strg= None) :
         self.ib = ibase(csv, name , initp, strat)
         self.s = strat
+
     def buy(self, date, value):
         self.ib.status = 1
 
@@ -130,9 +129,9 @@ class sunit() :
 
     def watch(self,date) :
         if self.ib.status :
-            return watch_cell(date,self.ib.value, self.s,self.ib)
+            return watch_cell(date,self.s,self.ib)
         else :
-            return watch_buy(date,self.ib.value, self.s,self.ib)
+            return watch_buy(date, self.s,self.ib)
 
     def act(self, idx, val):
         if self.ib.status :
