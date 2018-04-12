@@ -48,11 +48,15 @@ class sbase() :
     ### FOR OVERRIDE ###
     def __init__(self, *args):
         pass
-    def csell(self, ib):
+    def csell(self, date,ib):
         pass
-    def cbuy(self,today, ib):
+    def cbuy(self,date, ib):
         pass
     def gbuyp(self,list , perd,ib=None) :
+        pass
+    def gbuym(self,ib):
+        pass
+    def gcellm(self, ib):
         pass
     def gbuys(self,list, perd,ib=None):
         pass
@@ -63,9 +67,9 @@ class sbase() :
     ###              ###
 
 def watch_cell(date, s,ib) :
-    return s.csell(s,ib)
+    return s.csell(date,ib)
 def watch_buy(date, s,ib) :
-    return s.cbuy(s,ib)
+    return s.cbuy(date,ib)
 
 class ibase() :
     nM = None
@@ -78,8 +82,13 @@ class ibase() :
 
     def __init__(self, csv, strg , initp,name='stock'):
         self.value = np.array(csv)
+        self.value.reshape( self.value.shape[0])
         self.value.reshape([-1])
         self.name = name
+
+        self.net = [1]
+        res = [  (self.value[idx ] / self.value[idx + 1] )  for idx , val in enumerate(self.value[1:]) ]
+        self.net = np.append(self.net, res)
 
         self.N = get_N(self.value)
         self.nM = get_nM(self.value,20)
@@ -96,6 +105,7 @@ class ibase() :
         self.stock = 0
 
         self.perd = 20
+
 
 class sunit() :
     def __init__(self, csv , initp, strat,name='stock', strg= None) :
@@ -153,3 +163,12 @@ class sunit() :
         res = self.ib.amount - amount
         self.ib.amount = amount
         self.ib.rmount = res
+
+    def remain_stock(self):
+        return self.ib.stock
+
+    def remian_cash(self):
+        return self.ib.rmount
+
+    def eval_estate(self,date):
+        return self.ib.rmount + self.ib.stock * self.ib.value[date]

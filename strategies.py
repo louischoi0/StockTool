@@ -20,30 +20,29 @@ class s1(sbase) :
 
 
 class sbit(sbase) :
-	CLRATE = 0.99
-	CURATE = 1.01
+	CLRATE = 0.975
+	CURATE = 1.1
 
 	OPER = 5
+	def csell(self, date, ib):
+		if date < self.OPER :
+			return False
 
-	def csell_yest(self, ib) :
-		if ib.count < OPER :
-			return false
-		
-		anchor = ib.count - OPER 
-		c = np.cumprod(ib.Net[anchor:ib.count])[-1] 
-		if c < CLRATE or c > CURATE  :
+		anchor = date - 1
+		c = np.cumprod(ib.net[anchor:date + 1])[-1]
+		if c < self.CLRATE or c > self.CURATE  :
 			return True
 		else :
-			return False 
-	
-	def cbuy_yest(self, ib) :
-		if ib.count < 5 :
-			return false
+			return False
 
-		anchor = ib.count - OPER
-		c = np.cumprod(ib.Net[anchor:ib.count])[-1]
-		print(c)		
-		if c > 1.00 :
+	def cbuy(self, date, ib):
+		if date < 5 :
+			return False
+
+		anchor = date - self.OPER
+		c = np.cumprod(ib.net[anchor:date])[-1]
+		print(c)
+		if c > 1.08 :
 			return True
 
 	def gbuyp(self, list, date,ib=None):
