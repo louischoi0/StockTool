@@ -41,7 +41,6 @@ class sbit(sbase) :
 
 		anchor = date - self.OPER
 		c = np.cumprod(ib.net[anchor:date])[-1]
-		print(c)
 		if c > 1.08 :
 			return True
 

@@ -3,6 +3,14 @@ SET_PREPARE_PERIOD = 20
 
 import abc
 
+def get_mean_move(list, perd) :
+    res = np.empty(shape=list.shape, dtype=np.float64)
+    res[0:perd] = float('nan')
+
+    for i in range(perd, len(list)) :
+        res[i] = int(np.average(list[i-perd :i]))
+    return res
+
 def get_nM(list, perd) :
     res = np.empty(shape=list.shape, dtype=np.float64)
     res[0:perd] = float('nan')
@@ -72,18 +80,8 @@ def watch_buy(date, s,ib) :
     return s.cbuy(date,ib)
 
 class ibase() :
-    nM = None
-    N = None
-    value = None
-    comyest = None
-    net = None
-    initp = None
-    name = None
-
-    def __init__(self, csv, strg , initp,name='stock'):
-        self.value = np.array(csv)
-        self.value.reshape( self.value.shape[0])
-        self.value.reshape([-1])
+    def __init__(self, csv,  name='stock'):
+        self.value = csv
         self.name = name
 
         self.net = [1]
@@ -92,6 +90,7 @@ class ibase() :
 
         self.N = get_N(self.value)
         self.nM = get_nM(self.value,20)
+        self.meanMove5 = get_mean_move(self.value , 5)
 
         self.bdate = []
         self.sdate = []
@@ -101,21 +100,25 @@ class ibase() :
 
         self.status = 0
         self.stock = 0
-        self.rmount = initp
-        self.stock = 0
+        self.rmount = 0
+
+        self.rnet = np.zeros(self.value.shape[0])
+        self.sinfo = np.zeros(self.value.shape[0])
+        self.estates = np.zeros(self.value.shape[0])
 
         self.perd = 20
 
 
 class sunit() :
-    def __init__(self, csv , initp, strat,name='stock', strg= None) :
-        self.ib = ibase(csv, name , initp, strat)
+    def __init__(self, csv , strat , name='stock') :
+        self.ib = ibase(csv, name )
         self.s = strat
 
     def buy(self, date, value):
         self.ib.status = 1
 
         tt = self.s.gbuys(self.ib.value, self.ib.perd)
+        self.ib.sinfo[date] = tt
 
         self.ib.rmount -= value * tt
         self.ib.stock += tt
@@ -129,6 +132,8 @@ class sunit() :
         self.ib.status = 0
         tt = self.s.gcells(self.ib.value, self.ib.perd)
 
+        self.ib.rnet[date] = value * tt
+        self.ib.sinfo[date] = -tt
         self.ib.rmount += value * tt
         self.ib.stock -= tt
 
@@ -136,6 +141,7 @@ class sunit() :
         self.ib.smount.append(tt*value)
 
         print("Cell :: " + str(tt) , str(value) , str(date))
+
 
     def watch(self,date) :
         if self.ib.status :
@@ -153,11 +159,11 @@ class sunit() :
         for idx, v in enumerate(self.ib.value) :
             if self.watch(idx) :
                 self.act(idx, v)
+            self.info(idx)
+            self.ib.estates[idx] = self.eval_estate(idx)
 
         if self.ib.status :
             self.ib.rmount += self.ib.stock * v
-
-        print(self.ib.rmount)
 
     def rebalance(self, amount) :
         res = self.ib.amount - amount
@@ -171,4 +177,22 @@ class sunit() :
         return self.ib.rmount
 
     def eval_estate(self,date):
-        return self.ib.rmount + self.ib.stock * self.ib.value[date]
+        return int(self.ib.rmount + self.ib.stock * self.ib.value[date])
+
+    def eval_profit(self, date) :
+        a = self.ib.sinfo[0:date+1]
+        b = self.ib.value[0:date+1]
+
+        a = np.reshape(a,[date+1])
+        b = np.reshape (b,[date+1])
+
+        return int(-sum(np.multiply(a,b)) + self.ib.stock * self.ib.value[date][0])
+
+    def info(self, date):
+        profit = self.eval_profit(date)
+        estate = self.eval_estate(date)
+        print('%s :: %s , %s' %(date, profit, estate))
+
+    def supply_cache(self , cache) :
+        self.ib.cache = cache
+        self.ib.rmount = self.ib.cache
